@@ -19,30 +19,61 @@
 
     observableProto = {};
 
-        /**
-     *  Returns an observable sequence that contains a single element, using the specified scheduler to send out observer messages.
-     *  There is an alias called 'returnValue' for browsers <IE9.
-     *  
-     * @example
-     *  1 - res = Rx.Observable.return(42);
-     *  2 - res = Rx.Observable.return(42, Rx.Scheduler.timeout);
-     * @static
-     * @memberOf Observable
-     * @param {Mixed} value Single element in the resulting observable sequence.
-     * @param {Scheduler} scheduler Scheduler to send the single element on. If not specified, defaults to Scheduler.immediate.
-     * @returns {Observable} An observable sequence containing the single specified element.
-     */
-    var observableReturn = Observable['return'] = Observable.returnValue = function (value, scheduler) {
+    /*@
+    `Rx.Observable.case(selector, sources, [elseSource|scheduler])`
+
+    Uses selector to determine which source in sources to use.  There is an alias 'switchCase' for browsers <IE9.
+
+    ### Arguments
+    1. `selector` *(Function)*: The function which extracts the value for to test in a case statement.
+    2. `sources` *(Object)*: A object which has keys which correspond to the case statement labels.
+    3. `[elseSource|scheduler]` *(Observable|Scheduler)*: The observable sequence that will be run if the sources are not matched. If this is not provided, it defaults to `Rx.Observabe.empty` with the specified scheduler.
+
+    #### Returns
+    *(Observable)*: An observable sequence which is determined by a case statement. 
+
+    #### Example
+    ```js
+    var sources = {
+        'foo': Rx.Observable.return(42),
+        'bar': Rx.Observable.return(56)
+    };
+
+    var defaultSource = Rx.Observable.empty();
+
+    var source = Rx.Observable.case(
+        function () {
+            return 'foo';
+        },
+        sources,
+        defaultSource);
+
+    var subscription = source.subscribe(
+        function (x) {
+            console.log('Next: ' + x);
+        },
+        function (err) {
+            console.log('Error: ' + err);   
+        },
+        function () {
+            console.log('Completed');   
+        });
+
+    //=> Next: 42 
+    //=> Completed 
+    ```
+    */
+    var observableReturn = Observable['return'] = Observable.returnValue = function(value, scheduler) {
         scheduler || (scheduler = immediateScheduler);
-        return new AnonymousObservable(function (observer) {
-            return scheduler.schedule(function () {
+        return new AnonymousObservable(function(observer) {
+            return scheduler.schedule(function() {
                 observer.onNext(value);
                 observer.onCompleted();
             });
         });
     };
 
-    /**
+    /*@
 Propagates the observable sequence that reacts first.
 
 #### Arguments
@@ -86,7 +117,7 @@ var subscription = source.subscribe(
         return acc;
     };
 
-       /**
+    /**
      * Merges the specified observable sequences into one observable sequence by using the selector function whenever any of the observable sequences produces an element.
      * This can be in the form of an argument list of observables or an array.
      *
@@ -94,9 +125,9 @@ var subscription = source.subscribe(
      * 1 - obs = observable.combineLatest(obs1, obs2, obs3, function (o1, o2, o3) { return o1 + o2 + o3; });
      * 2 - obs = observable.combineLatest([obs1, obs2, obs3], function (o1, o2, o3) { return o1 + o2 + o3; });
      * @memberOf Observable#
-     * @returns {Observable} An observable sequence containing the result of combining elements of the sources using the specified result selector function. 
+     * @returns {Observable} An observable sequence containing the result of combining elements of the sources using the specified result selector function.
      */
-    observableProto.combineLatest = function () {
+    observableProto.combineLatest = function() {
         var args = slice.call(arguments);
         if (Array.isArray(args[0])) {
             args[0].unshift(this);

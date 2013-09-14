@@ -6,7 +6,7 @@ var modules = ['Observable'];
 
 // comments that begin with this flag are
 // to be used for generating documentation
-var docCommentFlag = '*';
+var docCommentFlag = '@';
 
 // use to convert a string containing \n 
 // into an array of strings
@@ -30,13 +30,11 @@ fs.readFile('sample.js', 'utf8', function(err, data) {
 		.filter(function(x) {
 			return x.value.indexOf(docCommentFlag) === 0
 		});
-	debugger;
-	var manifest = search(ast, flaggedComments);
 
-	debugger;
+	var manifest = scan(ast, flaggedComments);
 });
 
-function search(ast, comments) {
+function scan(ast, comments) {
 	var result = [];
 	var candidate = comments.shift();
 	var line = candidate.loc.end.line;
@@ -45,7 +43,6 @@ function search(ast, comments) {
 		'default': function(recurse, stop) {
 
 			if (this.loc.start.line === (line + 1)) {
-				debugger;
 				var comment = parseComment(candidate);
 				var doc = buildDoc(this, comment);
 				result.push(doc);
@@ -63,18 +60,41 @@ function search(ast, comments) {
 	return result;
 }
 
+function getPropertyValue(expression) {
+	return expression.property.type === 'Literal' ? expression.property.value : expression.property.name;
+}
+
+function AssignmentExpression(ast, model) {
+	var left = ast.left;
+	var right = ast.right;
+
+	model.module = left.object.name;
+	model.names.push(getPropertyValue(left));
+
+	if (right.type === 'AssignmentExpression') {
+		AssignmentExpression(right, model);
+	}
+
+	if (right.type === 'FunctionExpression') {
+		FunctionExpression(right, model);
+	}
+
+	return model;
+}
+
+function FunctionExpression(ast, model) {
+	model.parameters = ast.params.map(function(p) {
+		return p.name;
+	});
+	return model;
+}
+
 var parsers = {
 	ExpressionStatement: function(ast, model) {
-		var left = ast.expression.left;
-		// var right = ast.expression.right;
-
-		model.names.push(left.property.name);
-		model.module = left.object.name;
-
-		return model;
+		return AssignmentExpression(ast.expression, model);
 	},
 	VariableDeclaration: function(ast, model) {
-		return model;
+		return AssignmentExpression(ast.declarations[0].init, model);
 	}
 };
 
@@ -122,19 +142,5 @@ function buildDoc(ast, comment) {
 		}
 	});
 
-	debugger;
-
 	return model;
-	// return {
-	// 	file: 'observable.md',
-	// 	section: 'static', // 'instance',
-	// 	shortName: left.property.name,
-	// 	fullName: left.object.name + '.' + left.property.name,
-	// 	lines: {
-	// 		start: loc.start.line,
-	// 		end: loc.end.line
-	// 	},
-	// 	comment: comment
-	// };
-
 }
