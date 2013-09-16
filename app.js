@@ -8,20 +8,21 @@ var parsers = require('./lib/parsers');
 
 var namespace = config.namespace,
 	filePaths = config.files,
-	docCommentFlag = config.docCommentFlag;
+	docCommentFlag = config.docCommentFlag,
+	outputDir = config.outputDir;
 
 // used to match named sections in a flagged
 // comment, assumes @NameOfSection on a 
 // single line
 var patternParameter = /\B@(.+?)\b/i;
 
-processNextFile([]);
+processSourceFile([]);
 
-function processNextFile(manifest) {
+function processSourceFile(manifest) {
 
 	if (filePaths.length === 0) {
-		render(manifest);
-		console.log('all files processed');
+		var pages = render(manifest);
+		writeDocumentationFiles(pages);
 		return;
 	}
 
@@ -42,8 +43,33 @@ function processNextFile(manifest) {
 			});
 
 		var result = scan(ast, flaggedComments, path.basename(filePath));
-		processNextFile(manifest.concat(result));
+		processSourceFile(manifest.concat(result));
 	});
+}
+
+function writeDocumentationFiles(pages) {
+
+	function writeFiles() {
+		pages.forEach(function(page) {
+			var filename = page.meta.names[0].toLowerCase() + '.md';
+			var filePath = path.join(outputDir, filename);
+			fs.writeFile(filePath, page.content, function(err) {
+				if (err) throw err;
+			});
+		});
+	}
+
+	fs.exists(outputDir, function(exists) {
+		if (exists) {
+			writeFiles();
+		} else {
+			fs.mkdir(outputDir, function(err) {
+				if (err) throw err;
+				writeFiles();
+			});
+		}
+	});
+
 }
 
 function scan(ast, comments, sourceFile) {
