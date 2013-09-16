@@ -1,7 +1,10 @@
 var fs = require('fs');
 var esprima = require('esprima');
 var walker = require('walkes');
+var render = require('./lib/render');
 
+var filePath = 'rx.sample.js';
+var namespace = 'Rx';
 var modules = ['Observable'];
 
 // comments that begin with this flag are
@@ -10,14 +13,14 @@ var docCommentFlag = '@';
 
 // use to convert a string containing \n 
 // into an array of strings
-var patternLine = /.+/g;
+var patternLine = /.*\b/g;
 
 // used to match named sections in a flagged
 // comment, assumes #### NameOfSection on a 
 // single line
 var patternParameter = /\B#### (.+?)\b/i;
 
-fs.readFile('sample.js', 'utf8', function(err, data) {
+fs.readFile(filePath, 'utf8', function(err, data) {
 
 	if (err) console.log(err);
 
@@ -32,10 +35,12 @@ fs.readFile('sample.js', 'utf8', function(err, data) {
 		});
 
 	var manifest = scan(ast, flaggedComments);
+
+	render(manifest);
 });
 
 function scan(ast, comments) {
-	var result = [];
+	var items = [];
 	var candidate = comments.shift();
 	var line = candidate.loc.end.line;
 
@@ -44,8 +49,8 @@ function scan(ast, comments) {
 
 			if (this.loc.start.line === (line + 1)) {
 				var comment = parseComment(candidate);
-				var doc = buildDoc(this, comment);
-				result.push(doc);
+				var item = buildDoc(this, comment);
+				items.push(item);
 
 				if (comments.length === 0) stop();
 
@@ -57,18 +62,34 @@ function scan(ast, comments) {
 		}
 	});
 
-	return result;
+	return items;
 }
 
 function getPropertyValue(expression) {
 	return expression.property.type === 'Literal' ? expression.property.value : expression.property.name;
 }
 
+function DetermineName(name) {
+	var protoIndex = name.indexOf('Proto');
+
+	if (protoIndex > 1) {
+		name = name.substr(0, 1).toUpperCase() + name.substr(1, protoIndex - 1);
+	}
+
+	return name;
+}
+
+function DetermineType(name) {
+	var protoIndex = name.indexOf('Proto');
+
+	return (protoIndex > 1) ? 'instance' : 'static';
+}
+
 function AssignmentExpression(ast, model) {
 	var left = ast.left;
 	var right = ast.right;
-
-	model.module = left.object.name;
+	model.module = DetermineName(left.object.name);
+	model.type = DetermineType(left.object.name);
 	model.names.push(getPropertyValue(left));
 
 	if (right.type === 'AssignmentExpression') {
@@ -101,7 +122,8 @@ var parsers = {
 function parseComment(raw) {
 
 	var result = {};
-	var lines = raw.value.match(patternLine);
+	// var lines = raw.value.match(patternLine);
+	var lines = raw.value.split('\n');
 
 	// we assume that the body of the documentation
 	// is the first thing in the flagged comment
@@ -113,6 +135,8 @@ function parseComment(raw) {
 		// ignore the line that flags that this 
 		// comment is for documentation
 		if (line === docCommentFlag) return;
+
+		line = line.trim();
 
 		var match = patternParameter.exec(line);
 		if (match === null) {
@@ -135,6 +159,7 @@ function buildDoc(ast, comment) {
 	var model = parser(ast, {
 		names: [],
 		module: '',
+		type: 'static',
 		comment: comment,
 		lines: {
 			start: loc.start.line,
