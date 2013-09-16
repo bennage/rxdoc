@@ -115,7 +115,7 @@ function parseComment(raw) {
 		// comment is for documentation
 		if (line === docCommentFlag) return;
 
-		line = line.trim();
+		if (property !== 'example') line = line.trim();
 
 		var match = patternParameter.exec(line);
 		if (match === null) {
