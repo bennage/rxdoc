@@ -45,12 +45,6 @@ function processNextFile(manifest) {
 	});
 }
 
-filePaths.forEach(function(filePath) {
-
-
-});
-
-
 function scan(ast, comments, sourceFile) {
 	var items = [];
 	var candidate = comments.shift();

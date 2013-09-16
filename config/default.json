@@ -8,5 +8,8 @@
 
 	// comments that begin with this flag are
 	// to be used for generating documentation
-	"docCommentFlag": "@"
+	"docCommentFlag": "@",
+
+	// URL of the repository
+	"rootSourceUrl": "https://github.com/Reactive-Extensions/RxJS/blob/master/
 }
