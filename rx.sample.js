@@ -2725,13 +2725,13 @@
     /*@
     Creates an observable sequence from a specified subscribe method implementation.
 
-    #### Arguments
+    @Arguments
     1. `subscribe` *(Function)*: Implementation of the resulting observable sequence's subscribe method, optionally returning a function that will be wrapped in a disposable object.
 
-    #### Returns
+    @Returns
     *(Observable)*: The observable sequence with the specified implementation for the subscribe method.
 
-    #### Example
+    @Example
     ```js
     var source = Rx.Observable.create(function (observer) {
         observer.onNext(42);
@@ -2771,13 +2771,13 @@
     /*@
     Creates an observable sequence from a specified Subscribe method implementation.
 
-    #### Arguments
+    @Arguments
     1. `subscribe` *(Function)*: Implementation of the resulting observable sequence's subscribe method.
 
-    #### Returns
+    @Returns
     *(Observable)*: The observable sequence with the specified implementation for the subscribe method.
 
-    #### Example
+    @Example
     ```js
     var source = Rx.Observable.createWithDisposable(function (observer) {
         observer.onNext(42);
@@ -3530,10 +3530,10 @@
     /*@
     Transforms an observable sequence of observable sequences into an observable sequence producing values only from the most recent observable sequence.  There is an alias for this method called `switchLatest` for browsers <IE9.
   
-    #### Returns
+    @Returns
     *(Observable)*: The observable sequence that at any point in time produces the elements of the most recent inner observable sequence that has been received.  
      
-    #### Example
+    @Example
     ```js
     var source = Rx.Observable.range(0, 3)
         .select(function (x) { return Rx.Observable.range(x, 3); })

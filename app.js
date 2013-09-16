@@ -5,14 +5,14 @@ var esprima = require('esprima');
 var walker = require('walkes');
 var render = require('./lib/render');
 
-var namespace = config.namespace;
-var filePaths = config.files;
-var docCommentFlag = config.docCommentFlag;
+var namespace = config.namespace,
+	filePaths = config.files,
+	docCommentFlag = config.docCommentFlag;
 
 // used to match named sections in a flagged
-// comment, assumes #### NameOfSection on a 
+// comment, assumes @NameOfSection on a 
 // single line
-var patternParameter = /\B#### (.+?)\b/i;
+var patternParameter = /\B@(.+?)\b/i;
 
 processNextFile([]);
 
