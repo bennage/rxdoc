@@ -1,0 +1,19 @@
+#${module} object
+
+${body}
+
+## `${module} Methods`
+
+${staticTOC}
+
+## `${module} Instance Methods`
+
+${instanceTOC}
+
+## _${module} Methods_ ##
+
+${staticContent}
+
+## _${module} Instance Methods_ ##
+
+${intanceContent}

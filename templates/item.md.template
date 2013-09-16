@@ -1,0 +1,20 @@
+### <a id="${anchor}"></a>`${signature}`
+[&#x24C8;](${sourceUrl} "View in source")
+
+${body}
+
+#### Arguments
+${arguments}
+
+#### Returns
+${returns}
+
+#### Example
+```js
+${example}
+
+```
+
+### Location
+- ${file}
+* * *
