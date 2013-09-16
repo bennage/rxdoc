@@ -1,45 +1,57 @@
 var fs = require('fs');
+var path = require('path');
+var config = require('config');
 var esprima = require('esprima');
 var walker = require('walkes');
 var render = require('./lib/render');
 
-var filePath = 'rx.sample.js';
-var namespace = 'Rx';
-var modules = ['Observable'];
-
-// comments that begin with this flag are
-// to be used for generating documentation
-var docCommentFlag = '@';
-
-// use to convert a string containing \n 
-// into an array of strings
-var patternLine = /.*\b/g;
+var namespace = config.namespace;
+var filePaths = config.files;
+var docCommentFlag = config.docCommentFlag;
 
 // used to match named sections in a flagged
 // comment, assumes #### NameOfSection on a 
 // single line
 var patternParameter = /\B#### (.+?)\b/i;
 
-fs.readFile(filePath, 'utf8', function(err, data) {
+processNextFile([]);
 
-	if (err) console.log(err);
+function processNextFile(manifest) {
 
-	var ast = esprima.parse(data, {
-		loc: true,
-		comment: true
-	});
+	if (filePaths.length === 0) {
+		render(manifest);
+		console.log('all file processed');
+		return;
+	}
 
-	var flaggedComments = ast.comments
-		.filter(function(x) {
-			return x.value.indexOf(docCommentFlag) === 0
+	var filePath = filePaths.pop();
+
+	fs.readFile(filePath, 'utf8', function(err, data) {
+
+		if (err) console.log(err);
+
+		var ast = esprima.parse(data, {
+			loc: true,
+			comment: true
 		});
 
-	var manifest = scan(ast, flaggedComments);
+		var flaggedComments = ast.comments
+			.filter(function(x) {
+				return x.value.indexOf(docCommentFlag) === 0
+			});
 
-	render(manifest);
+		var result = scan(ast, flaggedComments, path.basename(filePath));
+		processNextFile(manifest.concat(result));
+	});
+}
+
+filePaths.forEach(function(filePath) {
+
+
 });
 
-function scan(ast, comments) {
+
+function scan(ast, comments, sourceFile) {
 	var items = [];
 	var candidate = comments.shift();
 	var line = candidate.loc.end.line;
@@ -49,7 +61,7 @@ function scan(ast, comments) {
 
 			if (this.loc.start.line === (line + 1)) {
 				var comment = parseComment(candidate);
-				var item = buildDoc(this, comment);
+				var item = buildDoc(this, comment, sourceFile);
 				items.push(item);
 
 				if (comments.length === 0) stop();
@@ -85,12 +97,18 @@ function DetermineType(name) {
 	return (protoIndex > 1) ? 'instance' : 'static';
 }
 
+function DetermineAnchor(model) {
+	return model.module + '-' + model.type + '-' + model.names[0];
+}
+
 function AssignmentExpression(ast, model) {
 	var left = ast.left;
 	var right = ast.right;
 	model.module = DetermineName(left.object.name);
 	model.type = DetermineType(left.object.name);
 	model.names.push(getPropertyValue(left));
+
+	model.anchor = DetermineAnchor(model);
 
 	if (right.type === 'AssignmentExpression') {
 		AssignmentExpression(right, model);
@@ -122,7 +140,7 @@ var parsers = {
 function parseComment(raw) {
 
 	var result = {};
-	// var lines = raw.value.match(patternLine);
+
 	var lines = raw.value.split('\n');
 
 	// we assume that the body of the documentation
@@ -150,7 +168,7 @@ function parseComment(raw) {
 	return result;
 }
 
-function buildDoc(ast, comment) {
+function buildDoc(ast, comment, sourceFile) {
 
 	var loc = ast.loc;
 	var parser = parsers[ast.type];
@@ -161,6 +179,7 @@ function buildDoc(ast, comment) {
 		module: '',
 		type: 'static',
 		comment: comment,
+		file: sourceFile,
 		lines: {
 			start: loc.start.line,
 			end: loc.end.line

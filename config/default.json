@@ -1,0 +1,12 @@
+{
+
+	// root namespace for the library to be documented
+	"namespace": "Rx",
+
+	// the set of files to extract documentation from
+	"files": ["rx.sample.js"],
+
+	// comments that begin with this flag are
+	// to be used for generating documentation
+	"docCommentFlag": "@"
+}
