@@ -4,6 +4,7 @@ var config = require('config');
 var esprima = require('esprima');
 var walker = require('walkes');
 var render = require('./lib/render');
+var parsers = require('./lib/parsers');
 
 var namespace = config.namespace,
 	filePaths = config.files,
@@ -20,7 +21,7 @@ function processNextFile(manifest) {
 
 	if (filePaths.length === 0) {
 		render(manifest);
-		console.log('all file processed');
+		console.log('all files processed');
 		return;
 	}
 
@@ -70,66 +71,6 @@ function scan(ast, comments, sourceFile) {
 
 	return items;
 }
-
-function getPropertyValue(expression) {
-	return expression.property.type === 'Literal' ? expression.property.value : expression.property.name;
-}
-
-function DetermineName(name) {
-	var protoIndex = name.indexOf('Proto');
-
-	if (protoIndex > 1) {
-		name = name.substr(0, 1).toUpperCase() + name.substr(1, protoIndex - 1);
-	}
-
-	return name;
-}
-
-function DetermineType(name) {
-	var protoIndex = name.indexOf('Proto');
-
-	return (protoIndex > 1) ? 'instance' : 'static';
-}
-
-function DetermineAnchor(model) {
-	return model.module + '-' + model.type + '-' + model.names[0];
-}
-
-function AssignmentExpression(ast, model) {
-	var left = ast.left;
-	var right = ast.right;
-	model.module = DetermineName(left.object.name);
-	model.type = DetermineType(left.object.name);
-	model.names.push(getPropertyValue(left));
-
-	model.anchor = DetermineAnchor(model);
-
-	if (right.type === 'AssignmentExpression') {
-		AssignmentExpression(right, model);
-	}
-
-	if (right.type === 'FunctionExpression') {
-		FunctionExpression(right, model);
-	}
-
-	return model;
-}
-
-function FunctionExpression(ast, model) {
-	model.parameters = ast.params.map(function(p) {
-		return p.name;
-	});
-	return model;
-}
-
-var parsers = {
-	ExpressionStatement: function(ast, model) {
-		return AssignmentExpression(ast.expression, model);
-	},
-	VariableDeclaration: function(ast, model) {
-		return AssignmentExpression(ast.declarations[0].init, model);
-	}
-};
 
 function parseComment(raw) {
 
